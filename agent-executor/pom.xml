@@ -2,13 +2,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.bsc.langgraph4j</groupId>
+        <groupId>com.atgenomix.seqslab</groupId>
         <artifactId>langgraph4j-parent</artifactId>
         <version>1.1.5</version>
         <relativePath>..</relativePath>
     </parent>
 
-    <artifactId>langgraph4j-agent-executor</artifactId>
+    <artifactId>langgraph4j-agent-executor-jdk8</artifactId>
     <packaging>jar</packaging>
 
     <name>langgraph4j::agent-executor</name>
@@ -90,7 +90,6 @@
 
     <build>
         <plugins>
-
             <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
