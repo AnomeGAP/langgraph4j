@@ -181,6 +181,7 @@
       </activation>
       <modules>
         <module>core-jdk8</module>
+        <module>agent-executor</module>
       </modules>
       <build>
 
@@ -193,7 +194,6 @@
       </activation>
       <modules>
         <module>langchain4j</module>
-        <module>agent-executor</module>
         <module>studio</module>
         <module>how-tos</module>
         <module>samples/image-to-diagram</module>
