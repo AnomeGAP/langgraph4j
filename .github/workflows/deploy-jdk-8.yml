@@ -24,7 +24,8 @@ jobs:
       - name: maven-settings-xml-action
         uses: whelk-io/maven-settings-xml-action@v14
         with:
-          servers: '[{ "id": "github", "username": "admin", "password": "${{ secrets.GITHUB_TOKEN }}" }]'
+          servers: '[{ "id": "nexus", "username": "admin", "password": "${{ secrets.NEXUS_PASSWORD }}" }, { "id": "github", "username": "admin", "password": "${{ secrets.PAT_GITHUB_PACKAGE_TOKEN }}" }]'
+
 
       - name: Build with Maven
         run: |
