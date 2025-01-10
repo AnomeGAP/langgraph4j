@@ -32,20 +32,6 @@ jobs:
           mvn versions:set -DnewVersion=${{ github.event.inputs.tags }}
           mvn -pl agent-executor clean deploy
           
-      - name: Create Release
-        if: success()
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: ${{ github.event.inputs.tags }}
-          release_name: ${{ github.event.inputs.tags }}
-          body: |
-            No Dependencies
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Slack Notification
         if: success()
         uses: rtCamp/action-slack-notify@v2
