@@ -32,13 +32,15 @@ jobs:
           mvn versions:set -DnewVersion=${{ github.event.inputs.tags }}
           mvn -pl agent-executor clean deploy
           
+      - uses: actions/checkout@v2
       - name: Slack Notification
-        if: success()
+        if: ${{ failure() }}
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_CHANNEL: release
+          SLACK_CHANNEL: tests
           SLACK_COLOR: '#3278BD'
-          SLACK_TITLE: Release-LangGraph4j-Agent-Executor-${{ github.event.inputs.tags }}
+          SLACK_MESSAGE: 'Test fails after commit pushed please check with links above.'
+          SLACK_TITLE: Test Failure
           SLACK_USERNAME: Github Action
           SLACK_MSG_AUTHOR: $GITHUB_ACTOR
