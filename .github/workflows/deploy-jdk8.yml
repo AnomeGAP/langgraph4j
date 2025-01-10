@@ -1,0 +1,57 @@
+name: LangGraph4j Agent Executor release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: 'Tag: Agent Executor Version'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout LangGraph4j Code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: maven-settings-xml-action
+        uses: whelk-io/maven-settings-xml-action@v14
+        with:
+          servers: '[{ "id": "github", "username": "admin", "password": "${{ secrets.GITHUB_TOKEN }}" }]'
+
+      - name: Build with Maven
+        run: |
+          mvn versions:set -DnewVersion=${{ github.event.inputs.tags }}
+          mvn clean deploy
+
+      - name: Create Release
+        if: success()
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.tags }}
+          release_name: ${{ github.event.inputs.tags }}
+          body: |
+            No Dependencies
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Slack Notification
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_CHANNEL: release
+          SLACK_COLOR: '#3278BD'
+          SLACK_TITLE: Release-LangGraph4j-Agent-Executor-${{ github.event.inputs.tags }}
+          SLACK_USERNAME: Github Action
+          SLACK_MSG_AUTHOR: $GITHUB_ACTOR
