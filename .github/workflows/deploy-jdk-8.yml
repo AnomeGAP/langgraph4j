@@ -1,4 +1,4 @@
-name: LangGraph4j Agent Executor release
+name: Deploy Agent Executor JDK8 
 
 on:
   workflow_dispatch:
