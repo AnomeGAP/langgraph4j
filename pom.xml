@@ -23,16 +23,6 @@
       <email>bartolomeo.sorrentino@gmail.com</email>
     </developer>
   </developers>
-  <scm>
-    <connection>scm:git: https://github.com/bsorrentino/langgraph4j.git </connection>
-    <developerConnection>scm:git: https://github.com/bsorrentino/langgraph4j.git </developerConnection>
-    <url> https://github.com/bsorrentino/langgraph4j</url>
-    <tag>HEAD</tag>
-  </scm>
-  <issueManagement>
-    <system>github</system>
-    <url> https://github.com/bsorrentino/langgraph4j/issues</url>
-  </issueManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,21 +31,11 @@
 
   <distributionManagement>
     <repository>
-      <id>${release.repo.id}</id>
-      <name>central</name>
-      <url>${release.repo.url}</url>
+      <id>nexus</id>
+      <name>Nexus Staging Repo</name>
+      <url>https://nexus-atgx.azurewebsites.net/repository/maven-releases/</url>
     </repository>
-    <snapshotRepository>
-      <id>${snapshot.repo.id}</id>
-      <name>snapshots</name>
-      <url>${snapshot.repo.url}</url>
-    </snapshotRepository>
-    <site>
-      <id>${project.artifactId}-site</id>
-      <url>${project.baseUri}</url>
-    </site>
   </distributionManagement>
-
 
   <dependencyManagement>
     <dependencies>
@@ -203,54 +183,5 @@
       <build>
       </build>
     </profile>
-
-    <profile>
-      <id>release</id>
-      <build>
-        <plugins>
-          <!--
-          ====================================================================================
-          # https://github.com/keybase/keybase-issues/issues/2798
-          export GPG_TTY=$(tty)
-          mvn -Prelease source:jar javadoc:jar deploy -Dgpg.passphrase=thephrase
-          ====================================================================================
-          -->
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-gpg-plugin</artifactId>
-            <version>3.2.4</version>
-            <executions>
-              <execution>
-                <id>sign-artifacts</id>
-                <phase>verify</phase>
-                <goals>
-                  <goal>sign</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <keyname>bartolomeo.sorrentino@gmail.com</keyname>
-              <gpgArguments>
-                <arg>--pinentry-mode</arg>
-                <arg>loopback</arg>
-              </gpgArguments>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.7.0</version>
-            <extensions>true</extensions>
-            <configuration>
-              <serverId>sonatype-server</serverId>
-              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-               <!--<skipStagingRepositoryClose>true</skipStagingRepositoryClose>-->
-               <autoReleaseAfterClose>true</autoReleaseAfterClose>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
   </profiles>
 </project>
