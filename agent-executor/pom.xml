@@ -14,10 +14,11 @@
     <name>langgraph4j::agent-executor</name>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jackson.version>2.17.2</jackson.version>
+        <langchain4j-jdk8.version>0.35.0</langchain4j-jdk8.version>
     </properties>
 
     <dependencies>
@@ -31,7 +32,7 @@
         <dependency>
             <groupId>org.bsc.langgraph4j</groupId>
             <artifactId>langgraph4j-langchain4j</artifactId>
-            <version>${project.version}</version>
+            <version>1.2.0</version>
         </dependency>
 
         <dependency>
@@ -43,17 +44,17 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j</artifactId>
-            <version>${langchai4j.version}</version>
+            <version>${langchain4j-jdk8.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
-            <version>${langchai4j.version}</version>
+            <version>${langchain4j-jdk8.version}</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-azure-open-ai</artifactId>
-            <version>${langchai4j.version}</version>
+            <version>${langchain4j-jdk8.version}</version>
         </dependency>
 
         <dependency>

@@ -6,7 +6,8 @@ package org.bsc.langgraph4j.agentexecutor.state;
  * @param action the action taken by the agent
  * @param finish the finish state of the agent
  */
-public record AgentOutcome(
-    AgentAction action,
-    AgentFinish finish
-) {}
+@lombok.Data
+public class AgentOutcome {
+    final AgentAction action;
+    final AgentFinish finish;
+}

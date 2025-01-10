@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,10 +33,10 @@ public class AgentExecutorStreamingTest {
 
     private StateGraph<AgentExecutor.State> newGraph()  throws Exception {
 
-        var openApiKey = DotEnvConfig.valueOf("OPENAI_API_KEY")
+        String openApiKey = DotEnvConfig.valueOf("OPENAI_API_KEY")
                 .orElseThrow( () -> new IllegalArgumentException("no APIKEY provided!"));
 
-        var chatLanguageModel = OpenAiStreamingChatModel.builder()
+        OpenAiStreamingChatModel chatLanguageModel = OpenAiStreamingChatModel.builder()
                 .apiKey( openApiKey )
                 .modelName( "gpt-4o-mini" )
                 .logResponses(true)
@@ -50,7 +52,7 @@ public class AgentExecutorStreamingTest {
 
     private List<AgentExecutor.State> executeAgent( String prompt )  throws Exception {
 
-        return toStateList( newGraph().compile().stream( Map.of( "input", prompt ) ) );
+        return toStateList( newGraph().compile().stream(Collections.singletonMap( "input", prompt ) ) );
     }
 
     private List<AgentExecutor.State> executeAgent( String prompt,
@@ -62,18 +64,19 @@ public class AgentExecutorStreamingTest {
                 .checkpointSaver( saver )
                 .build();
 
-        var config = RunnableConfig.builder().threadId(threadId).build();
+        RunnableConfig config = RunnableConfig.builder().threadId(threadId).build();
 
-        var graph = newGraph().compile( compileConfig );
+        CompiledGraph graph = newGraph().compile( compileConfig );
 
-        return toStateList(  graph.stream( Map.of( "input", prompt ), config ) );
+        return toStateList(  graph.stream( Collections.singletonMap( "input", prompt ), config ) );
     }
 
     private List<AgentExecutor.State> toStateList(AsyncGenerator<NodeOutput<AgentExecutor.State>> generator ) {
 
         return generator.stream()
                 .filter( s -> {
-                    if( s instanceof StreamingOutput<AgentExecutor.State> streamingOutput) {
+                    if( s instanceof StreamingOutput ) {
+                        StreamingOutput<AgentExecutor.State> streamingOutput = (StreamingOutput<AgentExecutor.State>) s;
                         System.out.printf( "%s '%s'\n", streamingOutput.node(), streamingOutput.chunk() );
                         return false;
                     }
@@ -87,15 +90,15 @@ public class AgentExecutorStreamingTest {
     @Test
     void executeAgentWithSingleToolInvocation() throws Exception {
 
-        var states = executeAgent("what is the result of test with messages: 'MY FIRST TEST'");
-        var state = states.get( states.size() - 1 );
+        List<AgentExecutor.State> states = executeAgent("what is the result of test with messages: 'MY FIRST TEST'");
+        AgentExecutor.State state = states.get( states.size() - 1 );
         assertNotNull(state);
         assertFalse(state.intermediateSteps().isEmpty());
         assertEquals( 1, state.intermediateSteps().size());
         assertTrue(state.agentOutcome().isPresent());
-        assertNotNull(state.agentOutcome().get().finish());
-        assertTrue( state.agentOutcome().get().finish().returnValues().containsKey("returnValues"));
-        var returnValues = state.agentOutcome().get().finish().returnValues().get("returnValues").toString();
+        assertNotNull(state.agentOutcome().get().getFinish());
+        assertTrue( state.agentOutcome().get().getFinish().getReturnValues().containsKey("returnValues"));
+        String returnValues = state.agentOutcome().get().getFinish().getReturnValues().get("returnValues").toString();
         assertTrue( returnValues.contains( "MY FIRST TEST") );
         System.out.println(returnValues);
     }
@@ -103,15 +106,15 @@ public class AgentExecutorStreamingTest {
     @Test
     void executeAgentWithDoubleToolInvocation() throws Exception {
 
-        var states = executeAgent("what is the result of test with messages: 'MY FIRST TEST' and the result of test with message: 'MY SECOND TEST'");
-        var state = states.get( states.size() - 1 );
+        List<AgentExecutor.State> states = executeAgent("what is the result of test with messages: 'MY FIRST TEST' and the result of test with message: 'MY SECOND TEST'");
+        AgentExecutor.State state = states.get( states.size() - 1 );
         assertNotNull(state);
         assertFalse(state.intermediateSteps().isEmpty());
         assertEquals( 2, state.intermediateSteps().size());
         assertTrue(state.agentOutcome().isPresent());
-        assertNotNull(state.agentOutcome().get().finish());
-        assertTrue( state.agentOutcome().get().finish().returnValues().containsKey("returnValues"));
-        var returnValues = state.agentOutcome().get().finish().returnValues().get("returnValues").toString();
+        assertNotNull(state.agentOutcome().get().getFinish());
+        assertTrue( state.agentOutcome().get().getFinish().getReturnValues().containsKey("returnValues"));
+        String returnValues = state.agentOutcome().get().getFinish().getReturnValues().get("returnValues").toString();
         assertTrue( returnValues.contains( "MY FIRST TEST") );
         assertTrue( returnValues.contains( "MY SECOND TEST") );
         System.out.println(returnValues);
@@ -121,21 +124,21 @@ public class AgentExecutorStreamingTest {
     @Test
     void executeAgentWithDoubleToolInvocationWithCheckpoint() throws Exception {
 
-        var saver = new MemorySaver();
-        var states = executeAgent(
+        MemorySaver saver = new MemorySaver();
+        List<AgentExecutor.State> states = executeAgent(
                 "what is the result of test with messages: 'MY FIRST TEST' and the result of test with message: 'MY SECOND TEST'",
                 "thread_1",
                 saver
                 );
         assertEquals( 7, states.size() ); // iterations
-        var state = states.get( states.size() - 1 );
+        AgentExecutor.State state = states.get( states.size() - 1 );
         assertNotNull(state);
         assertFalse(state.intermediateSteps().isEmpty());
         assertEquals( 2, state.intermediateSteps().size());
         assertTrue(state.agentOutcome().isPresent());
-        assertNotNull(state.agentOutcome().get().finish());
-        assertTrue( state.agentOutcome().get().finish().returnValues().containsKey("returnValues"));
-        var returnValues = state.agentOutcome().get().finish().returnValues().get("returnValues").toString();
+        assertNotNull(state.agentOutcome().get().getFinish());
+        assertTrue( state.agentOutcome().get().getFinish().getReturnValues().containsKey("returnValues"));
+        String returnValues = state.agentOutcome().get().getFinish().getReturnValues().get("returnValues").toString();
         assertTrue( returnValues.contains( "MY FIRST TEST") );
         assertTrue( returnValues.contains( "MY SECOND TEST") );
         System.out.println(returnValues);
@@ -149,9 +152,9 @@ public class AgentExecutorStreamingTest {
         state = states.get( states.size() - 1 );
         assertNotNull(state);
         assertTrue(state.agentOutcome().isPresent());
-        assertNotNull(state.agentOutcome().get().finish());
-        assertTrue( state.agentOutcome().get().finish().returnValues().containsKey("returnValues"));
-        returnValues = state.agentOutcome().get().finish().returnValues().get("returnValues").toString();
+        assertNotNull(state.agentOutcome().get().getFinish());
+        assertTrue( state.agentOutcome().get().getFinish().getReturnValues().containsKey("returnValues"));
+        returnValues = state.agentOutcome().get().getFinish().getReturnValues().get("returnValues").toString();
         assertTrue( returnValues.contains( "MY FIRST TEST") );
         assertTrue( returnValues.contains( "MY SECOND TEST") );
         System.out.println(returnValues);
@@ -160,23 +163,26 @@ public class AgentExecutorStreamingTest {
     @Test
     public void getGraphTest() throws Exception {
 
-        var app = new StateGraph<>(AgentState::new)
+        Map<String, String> map = new HashMap<>();
+        map.put("continue", "action");
+        map.put("end", END);
+        CompiledGraph app = new StateGraph<>(AgentState::new)
             .addEdge(START,"agent")
-            .addNode( "agent", node_async( state -> Map.of() ))
-            .addNode( "action", node_async( state -> Map.of() ))
+            .addNode( "agent", node_async( state -> Collections.EMPTY_MAP ))
+            .addNode( "action", node_async( state -> Collections.EMPTY_MAP ))
             .addConditionalEdges(
                     "agent",
                     edge_async(state -> ""),
-                    Map.of("continue", "action", "end", END)
+                    map
             )
             .addEdge("action", "agent")
             .compile();
 
-        var plantUml = app.getGraph( GraphRepresentation.Type.PLANTUML, "Agent Executor" );
+        GraphRepresentation plantUml = app.getGraph( GraphRepresentation.Type.PLANTUML, "Agent Executor" );
 
         System.out.println( plantUml.getContent() );
 
-        var mermaid = app.getGraph( GraphRepresentation.Type.MERMAID, "Agent Executor" );
+        GraphRepresentation mermaid = app.getGraph( GraphRepresentation.Type.MERMAID, "Agent Executor" );
 
         System.out.println( mermaid.getContent() );
     }

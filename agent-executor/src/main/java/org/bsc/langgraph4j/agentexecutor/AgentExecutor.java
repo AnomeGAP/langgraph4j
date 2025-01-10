@@ -34,7 +34,7 @@ public interface AgentExecutor {
      * Represents the state of an agent.
      */
     class State extends AgentState {
-        static Map<String, Channel<?>> SCHEMA = Map.of(
+        static Map<String, Channel<?>> SCHEMA = Collections.singletonMap(
                 "intermediate_steps", AppenderChannel.<IntermediateStep>of(ArrayList::new)
         );
 
@@ -207,9 +207,9 @@ public interface AgentExecutor {
                 throw new IllegalArgumentException("a chatLanguageModel or streamingChatLanguageModel is required!");
             }
 
-            final var toolNode = toolNodeBuilder.build();
+            final ToolNode toolNode = toolNodeBuilder.build();
 
-            var agent = Agent.builder()
+            Agent agent = Agent.builder()
                     .chatLanguageModel(chatLanguageModel)
                     .streamingChatLanguageModel(streamingChatLanguageModel)
                     .tools(toolNode.toolSpecifications())
@@ -219,13 +219,16 @@ public interface AgentExecutor {
                 stateSerializer = Serializers.STD.object();
             }
 
-            final var callAgent = new CallAgent(agent);
-            final var executeTools = new ExecuteTools(agent, toolNode);
+            final CallAgent callAgent = new CallAgent(agent);
+            final ExecuteTools executeTools = new ExecuteTools(agent, toolNode);
             final EdgeAction<State> shouldContinue = (state) ->
                     state.agentOutcome()
-                            .map(AgentOutcome::finish)
+                            .map(AgentOutcome::getFinish)
                             .map(finish -> "end")
                             .orElse("continue");
+            Map<String, String> map = new HashMap<>();
+            map.put("continue", "action");
+            map.put("end", END);
 
             return new StateGraph<>(State.SCHEMA, stateSerializer)
                     .addNode("agent", node_async(callAgent))
@@ -233,7 +236,7 @@ public interface AgentExecutor {
                     .addEdge(START, "agent")
                     .addConditionalEdges("agent",
                             edge_async(shouldContinue),
-                            Map.of("continue", "action", "end", END)
+                            map
                     )
                     .addEdge("action", "agent");
         }

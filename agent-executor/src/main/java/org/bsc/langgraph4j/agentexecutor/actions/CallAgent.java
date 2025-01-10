@@ -1,5 +1,6 @@
 package org.bsc.langgraph4j.agentexecutor.actions;
 
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
@@ -9,8 +10,11 @@ import org.bsc.langgraph4j.agentexecutor.*;
 import org.bsc.langgraph4j.agentexecutor.state.AgentAction;
 import org.bsc.langgraph4j.agentexecutor.state.AgentFinish;
 import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
+import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.generators.LLMStreamingGenerator;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,20 +44,20 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
      */
     private Map<String,Object> mapResult( Response<AiMessage> response )  {
 
-        var content = response.content();
+        AiMessage content = response.content();
 
         if( response.finishReason() == FinishReason.STOP ) {
-            var result = content.text();
-            var finish = new AgentFinish(Map.of("returnValues", result), result);
-            return Map.of("agent_outcome", new AgentOutcome(null, finish));
+            String result = content.text();
+            AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
+            return Collections.singletonMap("agent_outcome", new AgentOutcome(null, finish));
         }
 
         if (response.finishReason() == FinishReason.TOOL_EXECUTION || response.content().hasToolExecutionRequests() ) {
 
-            var toolExecutionRequests = response.content().toolExecutionRequests();
-            var action = new AgentAction(toolExecutionRequests.get(0), "");
+            List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
+            AgentAction action = new AgentAction(toolExecutionRequests.get(0), "");
 
-            return Map.of("agent_outcome", new AgentOutcome(action, null));
+            return Collections.singletonMap("agent_outcome", new AgentOutcome(action, null));
 
         }
 
@@ -70,24 +74,24 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
     @Override
     public Map<String,Object> apply( AgentExecutor.State state )  {
         log.trace( "callAgent" );
-        var input = state.input()
+        String input = state.input()
                 .orElseThrow(() -> new IllegalArgumentException("no input provided!"));
 
-        var intermediateSteps = state.intermediateSteps();
+        List<IntermediateStep> intermediateSteps = state.intermediateSteps();
 
         if( agent.isStreaming()) {
 
-            var generator = LLMStreamingGenerator.<AiMessage, AgentExecutor.State>builder()
+            LLMStreamingGenerator generator = LLMStreamingGenerator.<AiMessage, AgentExecutor.State>builder()
                     .mapResult( this::mapResult )
                     .startingNode("agent")
                     .startingState( state )
                     .build();
             agent.execute(input, intermediateSteps, generator.handler());
 
-            return Map.of( "agent_outcome", generator);
+            return Collections.singletonMap( "agent_outcome", generator);
         }
         else {
-            var response = agent.execute(input, intermediateSteps);
+            Response<AiMessage> response = agent.execute(input, intermediateSteps);
 
             return mapResult(response);
         }

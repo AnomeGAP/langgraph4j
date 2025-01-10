@@ -1,10 +1,12 @@
 package org.bsc.langgraph4j.agentexecutor;
 
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.*;
 import dev.langchain4j.model.StreamingResponseHandler;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
+import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import dev.langchain4j.model.output.Response;
 import lombok.Builder;
@@ -12,10 +14,7 @@ import lombok.Singular;
 import org.bsc.langgraph4j.agentexecutor.state.AgentAction;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -45,27 +44,27 @@ public class Agent {
      * @return a list of prepared chat messages.
      */
     private List<ChatMessage> prepareMessages(String input, List<IntermediateStep> intermediateSteps) {
-        var userMessageTemplate = PromptTemplate.from("{{input}}")
-                .apply(Map.of("input", input));
+        Prompt userMessageTemplate = PromptTemplate.from("{{input}}")
+                .apply(Collections.singletonMap("input", input));
 
-        var messages = new ArrayList<ChatMessage>();
+        ArrayList<ChatMessage> messages = new ArrayList<ChatMessage>();
 
         messages.add(new SystemMessage("You are a helpful assistant"));
         messages.add(new UserMessage(userMessageTemplate.text()));
 
         if (!intermediateSteps.isEmpty()) {
 
-            var toolRequests = intermediateSteps.stream()
-                    .map(IntermediateStep::action)
-                    .map(AgentAction::toolExecutionRequest)
+            List<ToolExecutionRequest> toolRequests = intermediateSteps.stream()
+                    .map(IntermediateStep::getAction)
+                    .map(AgentAction::getToolExecutionRequest)
                     .collect(Collectors.toList());
 
             messages.add(new AiMessage(toolRequests)); // reply with tool requests
 
             for (IntermediateStep step : intermediateSteps) {
-                var toolRequest = step.action().toolExecutionRequest();
+                ToolExecutionRequest toolRequest = step.getAction().getToolExecutionRequest();
 
-                messages.add(new ToolExecutionResultMessage(toolRequest.id(), toolRequest.name(), step.observation()));
+                messages.add(new ToolExecutionResultMessage(toolRequest.id(), toolRequest.name(), step.getObservation()));
             }
         }
         return messages;

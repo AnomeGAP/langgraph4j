@@ -9,9 +9,9 @@ import lombok.NonNull;
  * @param toolExecutionRequest the request for tool execution, must not be null
  * @param log a string representing the log of the action
  */
-public record AgentAction(
+@lombok.Data
+public class AgentAction {
     @NonNull
-    ToolExecutionRequest toolExecutionRequest,
-    String log ) {
-
+    final ToolExecutionRequest toolExecutionRequest;
+    final String log;
 }

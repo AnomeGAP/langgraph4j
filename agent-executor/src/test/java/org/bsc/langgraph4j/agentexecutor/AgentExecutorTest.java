@@ -11,10 +11,10 @@ public class AgentExecutorTest  extends AbstractAgentExecutorTest {
 
     @Override
     protected StateGraph<AgentExecutor.State> newGraph() throws Exception {
-        var openApiKey = DotEnvConfig.valueOf("OPENAI_API_KEY")
+        String openApiKey = DotEnvConfig.valueOf("OPENAI_API_KEY")
                 .orElseThrow( () -> new IllegalArgumentException("no APIKEY provided!"));
 
-        var chatLanguageModel = OpenAiChatModel.builder()
+        OpenAiChatModel chatLanguageModel = OpenAiChatModel.builder()
                 .apiKey( openApiKey )
                 .modelName( "gpt-4o-mini" )
                 .logResponses(true)

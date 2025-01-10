@@ -55,11 +55,11 @@ class AgentActionSerializer implements Serializer<AgentAction> {
      */
     @Override
     public void write(AgentAction action, ObjectOutput out) throws IOException {
-        ToolExecutionRequest ter =  action.toolExecutionRequest();
+        ToolExecutionRequest ter =  action.getToolExecutionRequest();
         out.writeUTF( ter.id() );
         out.writeUTF( ter.name() );
         out.writeUTF( ter.arguments() );
-        out.writeUTF( action.log() );
+        out.writeUTF( action.getLog() );
     }
 
     /**
@@ -98,8 +98,8 @@ class AgentFinishSerializer implements Serializer<AgentFinish> {
      */
     @Override
     public void write(AgentFinish object, ObjectOutput out) throws IOException {
-        out.writeObject(object.returnValues());
-        out.writeUTF(object.log());
+        out.writeObject(object.getReturnValues());
+        out.writeUTF(object.getLog());
     }
 
     /**
@@ -137,8 +137,8 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
      */
     @Override
     public void write(AgentOutcome object, ObjectOutput out) throws IOException {
-        writeNullableObject(object.action(), out);
-        writeNullableObject(object.finish(), out);
+        writeNullableObject(object.getAction(), out);
+        writeNullableObject(object.getFinish(), out);
     }
 
     /**
@@ -173,8 +173,8 @@ class IntermediateStepSerializer implements Serializer<IntermediateStep> {
      */
     @Override
     public void write(IntermediateStep object, ObjectOutput out) throws IOException {
-        out.writeUTF(object.observation());
-        out.writeObject(object.action());
+        out.writeUTF(object.getObservation());
+        out.writeObject(object.getAction());
     }
 
     /**

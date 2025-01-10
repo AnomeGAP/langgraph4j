@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import org.bsc.langgraph4j.agentexecutor.*;
 import org.bsc.langgraph4j.agentexecutor.state.AgentAction;
@@ -49,7 +50,7 @@ public class JSONStateSerializer extends JacksonStateSerializer<AgentExecutor.St
      */
     @Override
     public void write(AgentExecutor.State object, ObjectOutput out) throws IOException {
-        var json = objectMapper.writeValueAsString(object);
+        String json = objectMapper.writeValueAsString(object);
         out.writeUTF(json);
     }
 
@@ -63,7 +64,7 @@ public class JSONStateSerializer extends JacksonStateSerializer<AgentExecutor.St
      */
     @Override
     public AgentExecutor.State read(ObjectInput in) throws IOException, ClassNotFoundException {
-        var json = in.readUTF();
+        String json = in.readUTF();
         return objectMapper.readValue(json, AgentExecutor.State.class);
     }
 
@@ -88,8 +89,8 @@ class IntermediateStepDeserializer extends JsonDeserializer<IntermediateStep> {
     @Override
     public IntermediateStep deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
-        var actionNode = node.get("action");
-        var action = ( actionNode != null && !actionNode.isNull()) ?
+        JsonNode actionNode = node.get("action");
+        AgentAction action = ( actionNode != null && !actionNode.isNull()) ?
                 ctx.readValue(actionNode.traverse(parser.getCodec()), AgentAction.class) :
                 null;
 
@@ -143,8 +144,8 @@ class AgentActionDeserializer extends JsonDeserializer<AgentAction> {
     public AgentAction deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
 
-        var toolExecutionRequestNode = node.get("toolExecutionRequest");
-        var toolExecutionRequest = ctx.readValue(toolExecutionRequestNode.traverse(parser.getCodec()), ToolExecutionRequest.class);
+        JsonNode toolExecutionRequestNode = node.get("toolExecutionRequest");
+        ToolExecutionRequest toolExecutionRequest = ctx.readValue(toolExecutionRequestNode.traverse(parser.getCodec()), ToolExecutionRequest.class);
 
         return new AgentAction(
                 toolExecutionRequest,
@@ -172,9 +173,9 @@ class AgentFinishDeserializer extends JsonDeserializer<AgentFinish> {
     @Override
     public AgentFinish deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
-        var log = node.get("log").asText();
+        String log = node.get("log").asText();
 
-        var returnValuesNode = node.get("returnValues");
+        JsonNode returnValuesNode = node.get("returnValues");
 
         if (returnValuesNode == null || returnValuesNode.isNull()) {
             return new AgentFinish(null, log);
@@ -182,8 +183,8 @@ class AgentFinishDeserializer extends JsonDeserializer<AgentFinish> {
 
         if (returnValuesNode.isObject()) { // GUARD
             Map<String, Object> returnValues = new HashMap<>();
-            for (var entries = returnValuesNode.fields(); entries.hasNext(); ) {
-                var entry = entries.next();
+            for (Iterator<Map.Entry<String, JsonNode>> entries = returnValuesNode.fields(); entries.hasNext(); ) {
+                Map.Entry<String, JsonNode> entry = entries.next();
                 returnValues.put(entry.getKey(), entry.getValue());
             }
             return new AgentFinish(returnValues, log);
@@ -212,13 +213,13 @@ class AgentOutcomeDeserializer extends JsonDeserializer<AgentOutcome> {
     public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
 
-        var actionNode = node.get("action");
-        var action = ( actionNode != null && !actionNode.isNull()) ?
+        JsonNode actionNode = node.get("action");
+        AgentAction action = ( actionNode != null && !actionNode.isNull()) ?
                 ctx.readValue(actionNode.traverse(parser.getCodec()), AgentAction.class) :
                 null;
 
-        var finishNode = node.get("finish");
-        var finish = ( finishNode != null && !finishNode.isNull()) ?
+        JsonNode finishNode = node.get("finish");
+        AgentFinish finish = ( finishNode != null && !finishNode.isNull()) ?
                 ctx.readValue(finishNode.traverse(parser.getCodec()), AgentFinish.class) :
                 null;
 
@@ -250,10 +251,10 @@ class StateDeserializer extends JsonDeserializer<AgentExecutor.State> {
 
         Map<String,Object> data = new HashMap<>();
 
-        var dataNode = node.has("data") ? node.get("data") : node;
+        JsonNode dataNode = node.has("data") ? node.get("data") : node;
         data.put( "input", dataNode.get("input").asText() );
 
-        var intermediateStepsNode = dataNode.get("intermediate_steps");
+        JsonNode intermediateStepsNode = dataNode.get("intermediate_steps");
 
         if( intermediateStepsNode == null || intermediateStepsNode.isNull() ) { // GUARD
             throw new IOException("intermediate_steps must not be null!");
@@ -261,17 +262,17 @@ class StateDeserializer extends JsonDeserializer<AgentExecutor.State> {
         if(  !intermediateStepsNode.isArray()) { // GUARD
             throw new IOException("intermediate_steps must be an array!");
         }
-        var intermediateStepList = new ArrayList<IntermediateStep>();
+        ArrayList<IntermediateStep> intermediateStepList = new ArrayList<IntermediateStep>();
         for (JsonNode intermediateStepNode : intermediateStepsNode) {
 
-            var intermediateStep = ctx.readValue(intermediateStepNode.traverse(parser.getCodec()), IntermediateStep.class);
+            IntermediateStep intermediateStep = ctx.readValue(intermediateStepNode.traverse(parser.getCodec()), IntermediateStep.class);
             intermediateStepList.add(intermediateStep); // intermediateStepList
         }
         data.put("intermediate_steps", intermediateStepList);
 
-        var agentOutcomeNode = dataNode.get("agent_outcome");
+        JsonNode agentOutcomeNode = dataNode.get("agent_outcome");
         if( agentOutcomeNode != null && !agentOutcomeNode.isNull() ) { // GUARD
-            var agentOutcome = ctx.readValue(agentOutcomeNode.traverse(parser.getCodec()), AgentOutcome.class);
+            AgentOutcome agentOutcome = ctx.readValue(agentOutcomeNode.traverse(parser.getCodec()), AgentOutcome.class);
             data.put("agent_outcome", agentOutcome);
         }
         return new AgentExecutor.State( data );
