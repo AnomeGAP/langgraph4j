@@ -13,6 +13,7 @@ import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.generators.LLMStreamingGenerator;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,9 +56,13 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         if (response.finishReason() == FinishReason.TOOL_EXECUTION || response.content().hasToolExecutionRequests() ) {
 
             List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
-            AgentAction action = new AgentAction(toolExecutionRequests.get(0), "");
+            List<AgentAction> actions = new ArrayList<>();
+            for (ToolExecutionRequest request: toolExecutionRequests) {
+                AgentAction action = new AgentAction(request, "");
+                actions.add(action);
+            }
 
-            return Collections.singletonMap("agent_outcome", new AgentOutcome(action, null));
+            return Collections.singletonMap("agent_outcome", new AgentOutcome(actions, null));
 
         }
 

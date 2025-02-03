@@ -13,6 +13,8 @@ import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.tool.ToolNode;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Optional.ofNullable;
@@ -59,16 +61,16 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
 
         AgentOutcome agentOutcome = state.agentOutcome().orElseThrow(() -> new IllegalArgumentException("no agentOutcome provided!"));
 
-        ToolExecutionRequest toolExecutionRequest = ofNullable(agentOutcome.getAction())
-                .map(AgentAction::getToolExecutionRequest)
-                .orElseThrow(() -> new IllegalStateException("no action provided!" ))
-                ;
-        String result = toolNode.execute( toolExecutionRequest )
-                .map( ToolExecutionResultMessage::text )
-                .orElseThrow(() -> new IllegalStateException("no tool found for: " + toolExecutionRequest.name()));
+        List<IntermediateStep> intermediateSteps = new java.util.ArrayList<>();
+        for (AgentAction action: agentOutcome.getActions()) {
+           ToolExecutionRequest request = action.getToolExecutionRequest();
+            String result = toolNode.execute(request)
+                    .map( ToolExecutionResultMessage::text )
+                    .orElseThrow(() -> new IllegalStateException("no tool found for: " + request.name()));
+            intermediateSteps.add(new IntermediateStep(action, result));
+        }
 
-        return Collections.singletonMap("intermediate_steps", new IntermediateStep( agentOutcome.getAction(), result ) );
-
+        return Collections.singletonMap("intermediate_steps", intermediateSteps);
     }
 
 }

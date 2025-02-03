@@ -1,5 +1,7 @@
 package org.bsc.langgraph4j.agentexecutor.state;
 
+import java.util.List;
+
 /**
  * Represents the outcome of an agent's action.
  * 
@@ -8,6 +10,6 @@ package org.bsc.langgraph4j.agentexecutor.state;
  */
 @lombok.Data
 public class AgentOutcome {
-    final AgentAction action;
+    final List<AgentAction> actions;
     final AgentFinish finish;
 }

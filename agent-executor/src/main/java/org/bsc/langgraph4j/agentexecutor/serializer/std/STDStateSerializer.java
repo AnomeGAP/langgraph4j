@@ -14,6 +14,8 @@ import org.bsc.langgraph4j.serializer.std.ObjectStreamStateSerializer;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -137,7 +139,7 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
      */
     @Override
     public void write(AgentOutcome object, ObjectOutput out) throws IOException {
-        writeNullableObject(object.getAction(), out);
+        writeNullableObject(object.getActions(), out);
         writeNullableObject(object.getFinish(), out);
     }
 
@@ -151,9 +153,14 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
      */
     @Override
     public AgentOutcome read(ObjectInput in) throws IOException, ClassNotFoundException {
-        AgentAction action = readNullableObject(in).map(AgentAction.class::cast).orElse(null);
+        List<?> list = (List<?>)in.readObject();
+        assert list != null;
+        List<AgentAction> actions = new ArrayList<>();
+        for (Object o: list) {
+            actions.add((AgentAction) o);
+        }
         AgentFinish finish = readNullableObject(in).map(AgentFinish.class::cast).orElse(null);
-        return new AgentOutcome(action, finish);
+        return new AgentOutcome(actions, finish);
     }
 }
 

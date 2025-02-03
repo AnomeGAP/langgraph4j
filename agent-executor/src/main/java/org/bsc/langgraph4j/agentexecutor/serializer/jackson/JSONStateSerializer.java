@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -213,17 +214,26 @@ class AgentOutcomeDeserializer extends JsonDeserializer<AgentOutcome> {
     public AgentOutcome deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
 
-        JsonNode actionNode = node.get("action");
-        AgentAction action = ( actionNode != null && !actionNode.isNull()) ?
-                ctx.readValue(actionNode.traverse(parser.getCodec()), AgentAction.class) :
-                null;
+        JsonNode actionsNode = node.get("actions");
+
+        if(actionsNode == null || actionsNode.isNull() ) {
+            throw new IOException("actions must not be null!");
+        }
+        if(!actionsNode.isArray()) { // GUARD
+            throw new IOException("actions must be an array!");
+        }
+        ArrayList<AgentAction> agentActionList = new ArrayList<AgentAction>();
+        for (JsonNode actionNode: actionsNode) {
+            AgentAction action = ctx.readValue(actionNode.traverse(parser.getCodec()), AgentAction.class);
+            agentActionList.add(action);
+        }
 
         JsonNode finishNode = node.get("finish");
         AgentFinish finish = ( finishNode != null && !finishNode.isNull()) ?
                 ctx.readValue(finishNode.traverse(parser.getCodec()), AgentFinish.class) :
                 null;
 
-        return new AgentOutcome( action, finish );
+        return new AgentOutcome(agentActionList, finish);
     }
 }
 

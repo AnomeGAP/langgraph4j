@@ -1,11 +1,14 @@
 package org.bsc.langgraph4j.agentexecutor;
 
 import org.bsc.langgraph4j.agentexecutor.serializer.jackson.JSONStateSerializer;
+import org.bsc.langgraph4j.agentexecutor.serializer.std.STDStateSerializer;
 import org.bsc.langgraph4j.agentexecutor.state.AgentAction;
 import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -20,14 +23,16 @@ public class SerializableTest {
                 "                \"input\":\"perform test twice\",\n" +
                 "                \"intermediate_steps\":[],\n" +
                 "                \"agent_outcome\":{\n" +
-                "                    \"action\":{\n" +
-                "                        \"toolExecutionRequest\":{\n" +
-                "                            \"id\":\"call_m6TnU4B1Net6tm6zMPzXKJxP\",\n" +
-                "                            \"name\":\"execTest\",\n" +
-                "                            \"arguments\":\"{\\\"arg0\\\":\\\"perform test\\\"}\"\n" +
-                "                        },\n" +
-                "                        \"log\":\"\"\n" +
-                "                    },\n" +
+                "                    \"actions\":[" +
+                "                        {\n" +
+                "                          \"toolExecutionRequest\":{\n" +
+                "                              \"id\":\"call_m6TnU4B1Net6tm6zMPzXKJxP\",\n" +
+                "                              \"name\":\"execTest\",\n" +
+                "                              \"arguments\":\"{\\\"arg0\\\":\\\"perform test\\\"}\"\n" +
+                "                          },\n" +
+                "                          \"log\":\"\"\n" +
+                "                        }" +
+                "                ],\n" +
                 "                    \"finish\":null\n" +
                 "                }\n" +
                 "            }";
@@ -48,10 +53,10 @@ public class SerializableTest {
         assertInstanceOf( AgentOutcome.class, state.agentOutcome().get() );
         AgentOutcome agentOutcome = state.agentOutcome().get();
         assertNotNull(agentOutcome);
-        AgentAction action = agentOutcome.getAction();
-        assertNotNull(action);
-        assertEquals("execTest", action.getToolExecutionRequest().name());
-        assertEquals("{\"arg0\":\"perform test\"}", action.getToolExecutionRequest().arguments());
+        List<AgentAction> actions = agentOutcome.getActions();
+        assertNotNull(actions);
+        assertEquals("execTest", actions.get(0).getToolExecutionRequest().name());
+        assertEquals("{\"arg0\":\"perform test\"}", actions.get(0).getToolExecutionRequest().arguments());
 
     }
 
@@ -74,14 +79,24 @@ public class SerializableTest {
                 "        }\n" +
                 "    ],\n" +
                 "    \"agent_outcome\":{\n" +
-                "        \"action\":{\n" +
-                "            \"toolExecutionRequest\":{\n" +
-                "                \"id\":\"call_0LiS88saSYysfgAKHBMrIVEF\",\n" +
-                "                \"name\":\"execTest\",\n" +
-                "                \"arguments\":\"{\\\"arg0\\\":\\\"perform test once\\\"}\"\n" +
-                "            },\n" +
-                "            \"log\":\"\"\n" +
-                "        },\n" +
+                "        \"actions\":[" +
+                "            {\n" +
+                "              \"toolExecutionRequest\":{\n" +
+                "                  \"id\":\"call_0LiS88saSYysfgAKHBMrIVEF\",\n" +
+                "                  \"name\":\"execTest\",\n" +
+                "                  \"arguments\":\"{\\\"arg0\\\":\\\"perform test once\\\"}\"\n" +
+                "              },\n" +
+                "              \"log\":\"\"\n" +
+                "            }," +
+                "            {\n" +
+                "              \"toolExecutionRequest\":{\n" +
+                "                  \"id\":\"call_0LiS88saSYysfgAKHBMrIVEF\",\n" +
+                "                  \"name\":\"execTest\",\n" +
+                "                  \"arguments\":\"{\\\"arg0\\\":\\\"perform test twice\\\"}\"\n" +
+                "              },\n" +
+                "              \"log\":\"\"\n" +
+                "            }" +
+                "        ],\n" +
                 "        \"finish\":null\n" +
                 "    }\n" +
                 "}";
@@ -104,12 +119,11 @@ public class SerializableTest {
         assertInstanceOf( AgentOutcome.class, state.agentOutcome().get() );
         AgentOutcome agentOutcome = state.agentOutcome().get();
         assertNotNull(agentOutcome);
-        AgentAction action = agentOutcome.getAction();
-        assertNotNull(action);
-        assertEquals("execTest", action.getToolExecutionRequest().name());
-        assertEquals("{\"arg0\":\"perform test once\"}", action.getToolExecutionRequest().arguments());
+        List<AgentAction> actions = agentOutcome.getActions();
+        assertNotNull(actions);
+        assertEquals("execTest", actions.get(0).getToolExecutionRequest().name());
+        assertEquals("{\"arg0\":\"perform test once\"}", actions.get(0).getToolExecutionRequest().arguments());
 
     }
-
 }
 
