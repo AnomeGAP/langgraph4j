@@ -30,7 +30,7 @@ jobs:
       - name: Build with Maven
         run: |
           mvn versions:set -DnewVersion=${{ github.event.inputs.tags }}
-          mvn -pl agent-executor clean deploy -Dversion=${{ github.event.inputs.tags }}
+          mvn -pl agent-executor clean deploy
           
       - uses: actions/checkout@v2
       - name: Slack Notification
