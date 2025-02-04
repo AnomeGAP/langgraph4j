@@ -50,7 +50,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         if( response.finishReason() == FinishReason.STOP ) {
             String result = content.text();
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
-            return Collections.singletonMap("agent_outcome", new AgentOutcome(null, finish));
+            return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
         }
 
         if (response.finishReason() == FinishReason.TOOL_EXECUTION || response.content().hasToolExecutionRequests() ) {
