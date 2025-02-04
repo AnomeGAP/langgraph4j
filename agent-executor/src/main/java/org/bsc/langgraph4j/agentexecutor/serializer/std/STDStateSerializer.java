@@ -139,7 +139,7 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
      */
     @Override
     public void write(AgentOutcome object, ObjectOutput out) throws IOException {
-        writeNullableObject(object.getActions(), out);
+        out.writeObject(object.getActions());
         writeNullableObject(object.getFinish(), out);
     }
 
@@ -154,7 +154,6 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
     @Override
     public AgentOutcome read(ObjectInput in) throws IOException, ClassNotFoundException {
         List<?> list = (List<?>)in.readObject();
-        assert list != null;
         List<AgentAction> actions = new ArrayList<>();
         for (Object o: list) {
             actions.add((AgentAction) o);
