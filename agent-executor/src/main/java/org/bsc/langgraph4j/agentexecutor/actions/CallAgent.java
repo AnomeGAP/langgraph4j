@@ -2,6 +2,7 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -13,10 +14,7 @@ import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.generators.LLMStreamingGenerator;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The CallAgent class implements the NodeAction interface for handling 
@@ -58,7 +56,14 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
             List<AgentAction> actions = new ArrayList<>();
             for (ToolExecutionRequest request: toolExecutionRequests) {
-                AgentAction action = new AgentAction(request, "");
+                ToolExecutionRequest reqWithId = request;
+                if (request.id() == null) {
+                    reqWithId = ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
+                            .name(request.name())
+                            .arguments(request.arguments())
+                            .build();
+                }
+                AgentAction action = new AgentAction(reqWithId, "");
                 actions.add(action);
             }
 
