@@ -39,17 +39,18 @@ public class Agent {
     /**
      * Prepares a list of chat messages based on the input and intermediate steps.
      *
+     * @param systemMsg system message.
      * @param input the input string to process.
      * @param intermediateSteps a list of intermediate steps to consider.
      * @return a list of prepared chat messages.
      */
-    private List<ChatMessage> prepareMessages(String input, List<IntermediateStep> intermediateSteps) {
+    private List<ChatMessage> prepareMessages(String systemMsg, String input, List<IntermediateStep> intermediateSteps) {
         Prompt userMessageTemplate = PromptTemplate.from("{{input}}")
                 .apply(Collections.singletonMap("input", input));
 
         ArrayList<ChatMessage> messages = new ArrayList<ChatMessage>();
 
-        messages.add(new SystemMessage("You are a helpful assistant"));
+        messages.add(new SystemMessage(systemMsg));
         messages.add(new UserMessage(userMessageTemplate.text()));
 
         if (!intermediateSteps.isEmpty()) {
@@ -80,7 +81,21 @@ public class Agent {
     public void execute(String input, List<IntermediateStep> intermediateSteps, StreamingResponseHandler<AiMessage> handler) {
         Objects.requireNonNull(streamingChatLanguageModel, "streamingChatLanguageModel is required!");
 
-        streamingChatLanguageModel.generate(prepareMessages(input, intermediateSteps), tools, handler);
+        streamingChatLanguageModel.generate(prepareMessages("You are a helpful assistant", input, intermediateSteps), tools, handler);
+    }
+
+    /**
+     * Executes the agent's action based on the input and intermediate steps, using a streaming response handler.
+     *
+     * @param systemMsg System message.
+     * @param input the input string to process.
+     * @param intermediateSteps a list of intermediate steps to consider.
+     * @param handler the handler for streaming responses.
+     */
+    public void execute(String systemMsg, String input, List<IntermediateStep> intermediateSteps, StreamingResponseHandler<AiMessage> handler) {
+        Objects.requireNonNull(streamingChatLanguageModel, "streamingChatLanguageModel is required!");
+
+        streamingChatLanguageModel.generate(prepareMessages(systemMsg, input, intermediateSteps), tools, handler);
     }
 
     /**
@@ -92,6 +107,19 @@ public class Agent {
      */
     public Response<AiMessage> execute(String input, List<IntermediateStep> intermediateSteps) {
         Objects.requireNonNull(chatLanguageModel, "chatLanguageModel is required!");
-        return chatLanguageModel.generate(prepareMessages(input, intermediateSteps), tools);
+        return chatLanguageModel.generate(prepareMessages("You are a helpful assistant", input, intermediateSteps), tools);
+    }
+
+    /**
+     * Executes the agent's action based on the input and intermediate steps, returning a response.
+     *
+     * @param systemMsg System message.
+     * @param input the input string to process.
+     * @param intermediateSteps a list of intermediate steps to consider.
+     * @return a response containing the generated AI message.
+     */
+    public Response<AiMessage> execute(String systemMsg, String input, List<IntermediateStep> intermediateSteps) {
+        Objects.requireNonNull(chatLanguageModel, "chatLanguageModel is required!");
+        return chatLanguageModel.generate(prepareMessages(systemMsg, input, intermediateSteps), tools);
     }
 }

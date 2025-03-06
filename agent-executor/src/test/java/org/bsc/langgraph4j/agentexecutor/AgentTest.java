@@ -46,7 +46,7 @@ public class AgentTest {
                 .build();
 
         String msg = "hello world";
-        Response<AiMessage> response = agent.execute( format("this is an AI test with message: '%s'", msg), emptyList() );
+        Response<AiMessage> response = agent.execute(format("this is an AI test with message: '%s'", msg), emptyList() );
 
         assertNotNull(response);
         assertEquals(response.finishReason(), FinishReason.TOOL_EXECUTION );
