@@ -118,9 +118,13 @@ class ToolExecutionRequestDeserializer extends JsonDeserializer<ToolExecutionReq
     @Override
     public ToolExecutionRequest deserialize(JsonParser parser, DeserializationContext ctx) throws IOException, JacksonException {
         JsonNode node = parser.getCodec().readTree(parser);
-        return ToolExecutionRequest.builder()
-                .id(node.get("id").asText())
-                .name(node.get("name").asText())
+        ToolExecutionRequest.Builder builder = ToolExecutionRequest.builder();
+        JsonNode idNode = node.get("id");
+        if (idNode != null && !idNode.isNull()) {
+            builder.id(idNode.asText());
+        }
+
+        return builder.name(node.get("name").asText())
                 .arguments(node.get("arguments").asText())
                 .build();
     }

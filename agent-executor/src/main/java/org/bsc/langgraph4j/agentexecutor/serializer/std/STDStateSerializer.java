@@ -17,7 +17,7 @@ import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Optional;
 
 
 /**
@@ -46,7 +46,7 @@ public class STDStateSerializer extends ObjectStreamStateSerializer<AgentExecuto
  * The AgentActionSerializer class implements the Serializer interface for the AgentAction type.
  * It provides methods to serialize and deserialize AgentAction objects.
  */
-class AgentActionSerializer implements Serializer<AgentAction> {
+class AgentActionSerializer implements NullableObjectSerializer<AgentAction> {
 
     /**
      * Serializes the given AgentAction object to the specified output stream.
@@ -58,7 +58,7 @@ class AgentActionSerializer implements Serializer<AgentAction> {
     @Override
     public void write(AgentAction action, ObjectOutput out) throws IOException {
         ToolExecutionRequest ter =  action.getToolExecutionRequest();
-        out.writeUTF( ter.id() );
+        writeNullableUTF(ter.id(), out);
         out.writeUTF( ter.name() );
         out.writeUTF( ter.arguments() );
         out.writeUTF( action.getLog() );
@@ -74,11 +74,12 @@ class AgentActionSerializer implements Serializer<AgentAction> {
      */
     @Override
     public AgentAction read(ObjectInput in) throws IOException, ClassNotFoundException {
-        ToolExecutionRequest ter = ToolExecutionRequest.builder()
-                .id(in.readUTF())
-                .name(in.readUTF())
-                .arguments(in.readUTF())
-                .build();
+        ToolExecutionRequest.Builder builder = ToolExecutionRequest.builder();
+        Optional<String> id = readNullableUTF(in);
+        id.ifPresent(builder::id);
+        builder.name(in.readUTF())
+                .arguments(in.readUTF());
+        ToolExecutionRequest ter = builder.build();
 
         return  new AgentAction(  ter, in.readUTF() );
     }
