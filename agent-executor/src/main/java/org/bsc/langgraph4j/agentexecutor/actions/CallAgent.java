@@ -96,12 +96,19 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
                     .startingNode("agent")
                     .startingState( state )
                     .build();
-            agent.execute(input, intermediateSteps, generator.handler());
+
+            if (state.systemMessage().isPresent()) {
+                agent.execute(state.systemMessage().get(), input, intermediateSteps, generator.handler());
+            } else {
+                agent.execute(input, intermediateSteps, generator.handler());
+            }
 
             return Collections.singletonMap( "agent_outcome", generator);
         }
         else {
-            Response<AiMessage> response = agent.execute(input, intermediateSteps);
+            Response<AiMessage> response =state.systemMessage()
+                    .map(systemMsg -> agent.execute(systemMsg, input, intermediateSteps))
+                    .orElse(agent.execute(input, intermediateSteps));
 
             return mapResult(response);
         }

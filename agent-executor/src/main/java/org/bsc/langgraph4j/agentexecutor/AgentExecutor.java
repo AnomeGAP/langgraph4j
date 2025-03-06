@@ -48,6 +48,15 @@ public interface AgentExecutor {
         }
 
         /**
+         * Retrieves the system message.
+         *
+         * @return an Optional containing the system message if present
+         */
+        public Optional<String> systemMessage() {
+            return value("system_message");
+        }
+
+        /**
          * Retrieves the input value.
          *
          * @return an Optional containing the input value if present
