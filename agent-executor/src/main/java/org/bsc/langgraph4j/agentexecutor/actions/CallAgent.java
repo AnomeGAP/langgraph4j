@@ -44,6 +44,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
     private Map<String,Object> mapResult( Response<AiMessage> response )  {
 
         AiMessage content = response.content();
+        System.out.println("LLM response: " + response);
 
         if( response.finishReason() == FinishReason.STOP ) {
             String result = content.text();
