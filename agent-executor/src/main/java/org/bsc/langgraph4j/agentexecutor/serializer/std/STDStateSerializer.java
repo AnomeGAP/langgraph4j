@@ -169,7 +169,7 @@ class AgentOutcomeSerializer implements NullableObjectSerializer<AgentOutcome> {
  * The IntermediateStepSerializer class implements the Serializer interface for the IntermediateStep type.
  * It provides methods to serialize and deserialize IntermediateStep objects.
  */
-class IntermediateStepSerializer implements Serializer<IntermediateStep> {
+class IntermediateStepSerializer implements NullableObjectSerializer<IntermediateStep> {
     
     /**
      * Serializes the given IntermediateStep object to the specified ObjectOutput.
@@ -180,7 +180,7 @@ class IntermediateStepSerializer implements Serializer<IntermediateStep> {
      */
     @Override
     public void write(IntermediateStep object, ObjectOutput out) throws IOException {
-        out.writeUTF(object.getObservation());
+        writeNullableUTF(object.getObservation(), out);
         out.writeObject(object.getAction());
     }
 
@@ -194,8 +194,8 @@ class IntermediateStepSerializer implements Serializer<IntermediateStep> {
      */
     @Override
     public IntermediateStep read(ObjectInput in) throws IOException, ClassNotFoundException {
-        String observation = in.readUTF();
+        Optional<String> observation = readNullableUTF(in);
         AgentAction action = (AgentAction)in.readObject();
-        return new IntermediateStep(action, observation);
+        return new IntermediateStep(action, observation.orElse(""));
     }
 }
