@@ -46,7 +46,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
 
-        if( response.finishReason() == FinishReason.STOP ) {
+        if( response.finishReason() == FinishReason.STOP && !response.content().hasToolExecutionRequests()) {
             String result = content.text();
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
