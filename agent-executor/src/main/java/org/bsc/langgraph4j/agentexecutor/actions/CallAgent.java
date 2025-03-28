@@ -25,6 +25,8 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
     final Agent agent;
 
+    private Map<ToolExecutionRequest, Integer> map = new HashMap<>();
+
     /**
      * Constructs a CallAgent with the specified agent.
      *
@@ -46,7 +48,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
 
-        if( response.finishReason() == FinishReason.STOP && !response.content().hasToolExecutionRequests()) {
+        boolean repeatReq = content.toolExecutionRequests().stream().map(req -> map.containsKey(req)).reduce((a, b) -> a && b).orElse(true);
+
+        if( response.finishReason() == FinishReason.STOP && repeatReq) {
             String result = content.text();
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
