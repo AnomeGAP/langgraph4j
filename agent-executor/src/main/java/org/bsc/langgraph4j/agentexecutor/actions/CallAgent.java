@@ -2,7 +2,6 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
     final Agent agent;
 
-    private Map<ToolExecutionRequest, Integer> map = new HashMap<>();
+    private HashSet<ToolExecutionRequest> hashSet = new HashSet<>();
 
     /**
      * Constructs a CallAgent with the specified agent.
@@ -48,7 +47,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
 
-        boolean repeatReq = content.toolExecutionRequests().stream().map(req -> map.containsKey(req)).reduce((a, b) -> a && b).orElse(true);
+        boolean repeatReq = content.toolExecutionRequests().stream().map(req -> hashSet.contains(req)).reduce((a, b) -> a && b).orElse(true);
 
         if( response.finishReason() == FinishReason.STOP && repeatReq) {
             String result = content.text();
@@ -61,6 +60,8 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
             List<AgentAction> actions = new ArrayList<>();
             for (ToolExecutionRequest request: toolExecutionRequests) {
+                this.hashSet.add(request);
+
                 ToolExecutionRequest reqWithId = request;
                 if (request.id() == null) {
                     reqWithId = ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
