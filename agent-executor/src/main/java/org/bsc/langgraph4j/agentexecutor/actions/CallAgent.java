@@ -42,7 +42,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
      * @return a map containing the agent's outcome
      * @throws IllegalStateException if the finish reason of the response is unsupported
      */
-    private Map<String,Object> mapResult( Response<AiMessage> response )  {
+    private Map<String,Object> mapResult( Response<AiMessage> response, String previousObserv )  {
 
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
@@ -51,6 +51,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
         if( response.finishReason() == FinishReason.STOP && repeatReq) {
             String result = content.text();
+            if (result == null) {
+                result = previousObserv;
+            }
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
         }
@@ -96,9 +99,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         List<IntermediateStep> intermediateSteps = state.intermediateSteps();
 
         if( agent.isStreaming()) {
-
+            String previousObserv = intermediateSteps.get(intermediateSteps.size() - 1).getObservation();
             LLMStreamingGenerator generator = LLMStreamingGenerator.<AiMessage, AgentExecutor.State>builder()
-                    .mapResult( this::mapResult )
+                    .mapResult(i -> mapResult(i, previousObserv))
                     .startingNode("agent")
                     .startingState( state )
                     .build();
@@ -115,8 +118,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             Response<AiMessage> response =state.systemMessage()
                     .map(systemMsg -> agent.execute(systemMsg, input, intermediateSteps))
                     .orElse(agent.execute(input, intermediateSteps));
+            String previousObserv = intermediateSteps.get(intermediateSteps.size() - 1).getObservation();
 
-            return mapResult(response);
+            return mapResult(response, previousObserv);
         }
 
     }
