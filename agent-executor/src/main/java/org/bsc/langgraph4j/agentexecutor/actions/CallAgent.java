@@ -2,7 +2,6 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +24,10 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
     final Agent agent;
 
+    private HashSet<ToolExecutionRequest> hashSet = new HashSet<>();
+
+    private String previousObserv = null;
+
     /**
      * Constructs a CallAgent with the specified agent.
      *
@@ -46,17 +49,30 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
 
-        if( response.finishReason() == FinishReason.STOP ) {
-            String result = content.text();
+        String result = content.text();
+        FinishReason finishReason = response.finishReason();
+        if (response.content().hasToolExecutionRequests()) {
+            boolean repeatReq = content.toolExecutionRequests().stream().map(req -> hashSet.contains(req)).reduce((a, b) -> a && b).orElse(true);
+            if (repeatReq) {
+                finishReason = FinishReason.STOP;
+                result = this.previousObserv;
+            } else {
+                finishReason = FinishReason.TOOL_EXECUTION;
+            }
+        }
+
+        if( finishReason == FinishReason.STOP ) {
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
         }
 
-        if (response.finishReason() == FinishReason.TOOL_EXECUTION || response.content().hasToolExecutionRequests() ) {
+        if ( finishReason == FinishReason.TOOL_EXECUTION ) {
 
             List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
             List<AgentAction> actions = new ArrayList<>();
             for (ToolExecutionRequest request: toolExecutionRequests) {
+                this.hashSet.add(request);
+
                 ToolExecutionRequest reqWithId = request;
                 if (request.id() == null) {
                     reqWithId = ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
@@ -91,9 +107,11 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         List<IntermediateStep> intermediateSteps = state.intermediateSteps();
 
         if( agent.isStreaming()) {
-
+            if (!intermediateSteps.isEmpty()) {
+                this.previousObserv = intermediateSteps.get(intermediateSteps.size() - 1).getObservation();
+            }
             LLMStreamingGenerator generator = LLMStreamingGenerator.<AiMessage, AgentExecutor.State>builder()
-                    .mapResult( this::mapResult )
+                    .mapResult(this::mapResult)
                     .startingNode("agent")
                     .startingState( state )
                     .build();
@@ -110,6 +128,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             Response<AiMessage> response =state.systemMessage()
                     .map(systemMsg -> agent.execute(systemMsg, input, intermediateSteps))
                     .orElse(agent.execute(input, intermediateSteps));
+            if (!intermediateSteps.isEmpty()) {
+                this.previousObserv = intermediateSteps.get(intermediateSteps.size() - 1).getObservation();
+            }
 
             return mapResult(response);
         }
