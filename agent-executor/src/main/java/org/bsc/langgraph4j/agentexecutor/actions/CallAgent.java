@@ -49,18 +49,24 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         AiMessage content = response.content();
         System.out.println("LLM response: " + response);
 
-        boolean repeatReq = content.toolExecutionRequests().stream().map(req -> hashSet.contains(req)).reduce((a, b) -> a && b).orElse(true);
-
-        if( response.finishReason() == FinishReason.STOP && repeatReq) {
-            String result = content.text();
-            if (result == null) {
+        String result = content.text();
+        FinishReason finishReason = response.finishReason();
+        if (response.content().hasToolExecutionRequests()) {
+            boolean repeatReq = content.toolExecutionRequests().stream().map(req -> hashSet.contains(req)).reduce((a, b) -> a && b).orElse(true);
+            if (repeatReq) {
+                finishReason = FinishReason.STOP;
                 result = this.previousObserv;
+            } else {
+                finishReason = FinishReason.TOOL_EXECUTION;
             }
+        }
+
+        if( finishReason == FinishReason.STOP ) {
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
         }
 
-        if (response.finishReason() == FinishReason.TOOL_EXECUTION || response.content().hasToolExecutionRequests() ) {
+        if ( finishReason == FinishReason.TOOL_EXECUTION ) {
 
             List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
             List<AgentAction> actions = new ArrayList<>();
