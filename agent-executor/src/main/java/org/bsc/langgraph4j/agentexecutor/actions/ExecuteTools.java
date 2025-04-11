@@ -61,7 +61,7 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
                 .orElseThrow(() -> new IllegalArgumentException("no agentOutcome provided!"));
 
         List<AgentAction> actions = agentOutcome.getActions();
-        int numThreads = Math.min(actions.size(), Runtime.getRuntime().availableProcessors());
+        int numThreads = 10;
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
 
         try {
