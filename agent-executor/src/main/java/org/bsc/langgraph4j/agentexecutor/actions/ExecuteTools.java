@@ -12,12 +12,10 @@ import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.tool.ToolNode;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
-import static java.util.Optional.ofNullable;
 
 /**
  * The ExecuteTools class implements the NodeAction interface for handling 
@@ -56,21 +54,40 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
      * @throws IllegalStateException if no action or tool is found for execution
      */
     @Override
-    public Map<String,Object> apply(AgentExecutor.State state )  {
-        log.trace( "executeTools" );
+    public Map<String, Object> apply(AgentExecutor.State state) {
+        log.trace("executeTools");
 
-        AgentOutcome agentOutcome = state.agentOutcome().orElseThrow(() -> new IllegalArgumentException("no agentOutcome provided!"));
+        AgentOutcome agentOutcome = state.agentOutcome()
+                .orElseThrow(() -> new IllegalArgumentException("no agentOutcome provided!"));
 
-        List<IntermediateStep> intermediateSteps = new java.util.ArrayList<>();
-        for (AgentAction action: agentOutcome.getActions()) {
-           ToolExecutionRequest request = action.getToolExecutionRequest();
-            String result = toolNode.execute(request)
-                    .map( ToolExecutionResultMessage::text )
-                    .orElseThrow(() -> new IllegalStateException("no tool found for: " + request.name()));
-            intermediateSteps.add(new IntermediateStep(action, result));
+        List<AgentAction> actions = agentOutcome.getActions();
+        int numThreads = Math.min(actions.size(), Runtime.getRuntime().availableProcessors());
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+
+        try {
+            List<Callable<IntermediateStep>> tasks = actions.stream()
+                    .map(action -> (Callable<IntermediateStep>) () -> {
+                        ToolExecutionRequest request = action.getToolExecutionRequest();
+                        String result = toolNode.execute(request)
+                                .map(ToolExecutionResultMessage::text)
+                                .orElseThrow(() -> new IllegalStateException("no tool found for: " + request.name()));
+                        return new IntermediateStep(action, result);
+                    })
+                    .collect(Collectors.toList());
+
+            List<Future<IntermediateStep>> futures = executor.invokeAll(tasks);
+            List<IntermediateStep> intermediateSteps = new ArrayList<>(futures.size());
+
+            for (Future<IntermediateStep> future : futures) {
+                intermediateSteps.add(future.get());
+            }
+
+            return Collections.singletonMap("intermediate_steps", intermediateSteps);
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Tool execution failed", e);
+        } finally {
+            executor.shutdown();
         }
-
-        return Collections.singletonMap("intermediate_steps", intermediateSteps);
     }
 
 }
