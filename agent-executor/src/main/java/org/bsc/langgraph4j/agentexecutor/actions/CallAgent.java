@@ -72,11 +72,11 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
         if ( finishReason == FinishReason.TOOL_EXECUTION ) {
 
-            List<ToolExecutionRequest> toolExecutionRequests;
-            if (response.content().text().startsWith("<|python_start|>")) {
-                toolExecutionRequests = toToolExecutionRequests(response.content().text());
-            } else {
+            List<ToolExecutionRequest> toolExecutionRequests = Collections.EMPTY_LIST;
+            if (response.content().hasToolExecutionRequests()) {
                 toolExecutionRequests = response.content().toolExecutionRequests();
+            } else if (response.content().text().startsWith("<|python_start|>")) {
+                toolExecutionRequests = toToolExecutionRequests(response.content().text());
             }
             List<AgentAction> actions = new ArrayList<>();
             for (ToolExecutionRequest request: toolExecutionRequests) {
