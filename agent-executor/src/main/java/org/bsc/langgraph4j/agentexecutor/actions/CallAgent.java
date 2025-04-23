@@ -1,5 +1,7 @@
 package org.bsc.langgraph4j.agentexecutor.actions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.output.FinishReason;
@@ -61,6 +63,10 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             }
         }
 
+        if (response.content().text().startsWith("<|python_start|>")) {
+            finishReason = FinishReason.TOOL_EXECUTION;
+        }
+
         if( finishReason == FinishReason.STOP ) {
             AgentFinish finish = new AgentFinish(Collections.singletonMap("returnValues", result), result);
             return Collections.singletonMap("agent_outcome", new AgentOutcome(Collections.emptyList(), finish));
@@ -68,7 +74,12 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
         if ( finishReason == FinishReason.TOOL_EXECUTION ) {
 
-            List<ToolExecutionRequest> toolExecutionRequests = response.content().toolExecutionRequests();
+            List<ToolExecutionRequest> toolExecutionRequests;
+            if (response.content().text().startsWith("<|python_start|>")) {
+                toolExecutionRequests = toToolExecutionRequests(response.content().text());
+            } else {
+                toolExecutionRequests = response.content().toolExecutionRequests();
+            }
             List<AgentAction> actions = new ArrayList<>();
             for (ToolExecutionRequest request: toolExecutionRequests) {
                 this.hashSet.add(request);
@@ -89,6 +100,30 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         }
 
         throw new IllegalStateException("Unsupported finish reason: " + response.finishReason() );
+    }
+
+    private List<ToolExecutionRequest> toToolExecutionRequests(String text) throws Exception {
+        // Extract JSON between markers
+        String prefix = "<|python_start|>";
+        String suffix = "<|python_end|>";
+        int start = text.indexOf(prefix) + prefix.length();
+        int end = text.indexOf(suffix);
+        String jsonString = text.substring(start, end).trim();
+
+        // Parse JSON
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(jsonString);
+        String name = root.get("name").asText();
+        JsonNode parameters = root.get("parameters");
+
+        // Return ToolExecutionRequest
+        List<ToolExecutionRequest> requests = new ArrayList<>();
+        requests.add(ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
+                .name(name)
+                .arguments(parameters.toString())
+                .build());
+
+        return requests;
     }
 
     /**
