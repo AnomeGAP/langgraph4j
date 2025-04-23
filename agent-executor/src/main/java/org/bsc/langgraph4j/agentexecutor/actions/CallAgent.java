@@ -102,7 +102,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         throw new IllegalStateException("Unsupported finish reason: " + response.finishReason() );
     }
 
-    private List<ToolExecutionRequest> toToolExecutionRequests(String text) throws Exception {
+    private List<ToolExecutionRequest> toToolExecutionRequests(String text) {
         // Extract JSON between markers
         String prefix = "<|python_start|>";
         String suffix = "<|python_end|>";
@@ -110,18 +110,22 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         int end = text.indexOf(suffix);
         String jsonString = text.substring(start, end).trim();
 
+        List<ToolExecutionRequest> requests = new ArrayList<>();
         // Parse JSON
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(jsonString);
-        String name = root.get("name").asText();
-        JsonNode parameters = root.get("parameters");
+        try {
+            JsonNode root = mapper.readTree(jsonString);
+            String name = root.get("name").asText();
+            JsonNode parameters = root.get("parameters");
 
-        // Return ToolExecutionRequest
-        List<ToolExecutionRequest> requests = new ArrayList<>();
-        requests.add(ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
-                .name(name)
-                .arguments(parameters.toString())
-                .build());
+            // Return ToolExecutionRequest
+            requests.add(ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
+                    .name(name)
+                    .arguments(parameters.toString())
+                    .build());
+        } catch (Exception e) {
+           System.out.println(e.getMessage());
+        }
 
         return requests;
     }
