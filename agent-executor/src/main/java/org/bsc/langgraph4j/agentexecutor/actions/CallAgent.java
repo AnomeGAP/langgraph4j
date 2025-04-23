@@ -61,9 +61,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             } else {
                 finishReason = FinishReason.TOOL_EXECUTION;
             }
-        }
-
-        if (response.content().text().startsWith("<|python_start|>")) {
+        } else if (response.content().text().startsWith("<|python_start|>")) {
             finishReason = FinishReason.TOOL_EXECUTION;
         }
 
