@@ -2,6 +2,7 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.output.FinishReason;
@@ -15,6 +16,7 @@ import org.bsc.langgraph4j.agentexecutor.state.AgentOutcome;
 import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.generators.LLMStreamingGenerator;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -115,7 +117,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
             JsonNode root = mapper.readTree(jsonString);
             String name = root.get("name").asText();
             JsonNode parameters = root.get("parameters");
-
+            convertBracketedStringsToList(parameters, mapper);
             // Return ToolExecutionRequest
             requests.add(ToolExecutionRequest.builder().id("call_" + UUID.randomUUID())
                     .name(name)
@@ -126,6 +128,28 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         }
 
         return requests;
+    }
+
+    public void convertBracketedStringsToList(JsonNode node, ObjectMapper mapper) {
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> entry = fields.next();
+            JsonNode value = entry.getValue();
+
+            if (value.isTextual() && value.asText().trim().startsWith("[")) {
+                String text = value.asText().trim();
+                try {
+                    // Try parsing the string into an ArrayNode
+                    JsonNode parsedNode = mapper.readTree(text);
+                    if (parsedNode.isArray()) {
+                        ((ObjectNode)node).set(entry.getKey(), parsedNode);
+                    }
+                } catch (IOException e) {
+                    // Ignore or log parsing errors, value is not a valid JSON array
+                    System.err.println("Failed to parse field '" + entry.getKey() + "' as JSON array: " + text);
+                }
+            }
+        }
     }
 
     /**
