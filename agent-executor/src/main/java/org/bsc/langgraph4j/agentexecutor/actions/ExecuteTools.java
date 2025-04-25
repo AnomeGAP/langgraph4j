@@ -72,6 +72,12 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
                 String sql = request.arguments();
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
+            } else if (result.startsWith("Table or view not found")) {
+                int errMsgEnd = result.indexOf(';');
+                String errMsg = result.substring(0, errMsgEnd);
+                String sql = request.arguments();
+                String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
+                intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
             } else {
                 intermediateSteps.add(new IntermediateStep(action, result));
             }
