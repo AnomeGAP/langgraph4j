@@ -65,7 +65,7 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
             String result = toolNode.execute(request)
                     .map( ToolExecutionResultMessage::text )
                     .orElseThrow(() -> new IllegalStateException("no tool found for: " + request.name()));
-            if (result.startsWith("cannot resole")) {
+            if (result.startsWith("cannot resolve")) {
                 int errMsgBegin = result.indexOf(':');
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(errMsgBegin, errMsgEnd);
