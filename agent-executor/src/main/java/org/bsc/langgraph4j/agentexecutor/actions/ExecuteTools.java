@@ -2,6 +2,7 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.service.tool.ToolExecutionRequestUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.NodeAction;
@@ -67,7 +68,16 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
             String result = toolNode.execute(request)
                     .map( ToolExecutionResultMessage::text )
                     .orElseThrow(() -> new IllegalStateException("no tool found for: " + request.name()));
-            intermediateSteps.add(new IntermediateStep(action, result));
+            if (result.startsWith("cannot resole")) {
+                int errMsgBegin = result.indexOf(':');
+                int errMsgEnd = result.indexOf(';');
+                String errMsg = result.substring(errMsgBegin, errMsgEnd);
+                String sql = request.arguments();
+                String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
+                intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
+            } else {
+                intermediateSteps.add(new IntermediateStep(action, result));
+            }
         }
 
         return Collections.singletonMap("intermediate_steps", intermediateSteps);
