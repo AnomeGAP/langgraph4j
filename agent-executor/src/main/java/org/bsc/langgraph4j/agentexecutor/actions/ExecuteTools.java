@@ -2,7 +2,6 @@ package org.bsc.langgraph4j.agentexecutor.actions;
 
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.service.tool.ToolExecutionRequestUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.NodeAction;
@@ -14,11 +13,9 @@ import org.bsc.langgraph4j.agentexecutor.state.IntermediateStep;
 import org.bsc.langgraph4j.langchain4j.tool.ToolNode;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Optional.ofNullable;
 
 /**
  * The ExecuteTools class implements the NodeAction interface for handling 
