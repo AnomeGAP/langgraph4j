@@ -1,5 +1,7 @@
 package org.bsc.langgraph4j.agentexecutor.actions;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import lombok.NonNull;
@@ -69,13 +71,17 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
                 int errMsgBegin = result.indexOf(':');
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(errMsgBegin, errMsgEnd);
-                String sql = request.arguments();
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(request.arguments());
+                String sql = root.get("arg0").asText();
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
             } else if (result.startsWith("Table or view not found")) {
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(0, errMsgEnd);
-                String sql = request.arguments();
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode root = mapper.readTree(request.arguments());
+                String sql = root.get("arg0").asText();
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
             } else {
