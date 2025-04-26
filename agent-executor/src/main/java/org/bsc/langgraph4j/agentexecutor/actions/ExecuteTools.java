@@ -72,16 +72,26 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(errMsgBegin, errMsgEnd);
                 ObjectMapper mapper = new ObjectMapper();
-                JsonNode root = mapper.readTree(request.arguments());
-                String sql = root.get("arg0").asText();
+                String sql;
+                try {
+                    JsonNode root = mapper.readTree(request.arguments());
+                    sql = root.get("arg0").asText();
+                } catch (Exception e) {
+                    sql = request.arguments();
+                }
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
             } else if (result.startsWith("Table or view not found")) {
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(0, errMsgEnd);
                 ObjectMapper mapper = new ObjectMapper();
-                JsonNode root = mapper.readTree(request.arguments());
-                String sql = root.get("arg0").asText();
+                String sql;
+                try {
+                    JsonNode root = mapper.readTree(request.arguments());
+                    sql = root.get("arg0").asText();
+                } catch (Exception e) {
+                    sql = request.arguments();
+                }
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
             } else {
