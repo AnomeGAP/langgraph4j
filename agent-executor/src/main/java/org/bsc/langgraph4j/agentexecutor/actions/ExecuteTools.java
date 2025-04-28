@@ -81,7 +81,7 @@ public class ExecuteTools implements NodeAction<AgentExecutor.State> {
                 }
                 String sparkErrMsg = String.format("Spark SQL syntax error:\noriginal sql: %s\nerror message: %s\n", sql, errMsg);
                 intermediateSteps.add(new IntermediateStep(action, sparkErrMsg));
-            } else if (result.startsWith("Table or view not found")) {
+            } else if (result.startsWith("Table or view not found") || result.startsWith("Column '.*' does not exist")) {
                 int errMsgEnd = result.indexOf(';');
                 String errMsg = result.substring(0, errMsgEnd);
                 ObjectMapper mapper = new ObjectMapper();
