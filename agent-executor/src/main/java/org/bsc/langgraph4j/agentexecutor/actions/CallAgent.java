@@ -65,7 +65,11 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
                     return pretty;
                 }
         ).collect(Collectors.toList());
-        System.out.println("LLM response:\n" + content.text() + "\n" + String.join("\n", pretties));
+        if (content.text() != null) {
+            System.out.println("LLM response:\n" + content.text() + "\n" + String.join("\n", pretties));
+        } else {
+            System.out.println("LLM response:\n" + String.join("\n", pretties));
+        }
 
         String result = content.text();
         FinishReason finishReason = response.finishReason();
