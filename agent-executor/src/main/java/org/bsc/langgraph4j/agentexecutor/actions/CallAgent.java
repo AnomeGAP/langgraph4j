@@ -56,7 +56,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         List<String> pretties = content.toolExecutionRequests().stream().map(req -> {
                     String pretty;
                     try {
-                        JsonNode root = mapper.readTree(req.toString());
+                        JsonNode root = mapper.readTree(req.toString().substring(20)); // remove ToolExecutionRequest
                         pretty = root.toPrettyString();
                     } catch (Exception e) {
                         pretty = e.getMessage();
