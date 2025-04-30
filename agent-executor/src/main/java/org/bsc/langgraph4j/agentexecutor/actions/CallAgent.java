@@ -164,9 +164,29 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
                     } catch (Exception e) {
                         pretty = e.getMessage();
                     }
-                    return pretty;
+                    return shorten(pretty);
                 }
         ).collect(Collectors.toList());
+    }
+
+    private String shorten(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+
+        StringBuilder result = new StringBuilder();
+        int length = input.length();
+        int chunkSize = 120;
+
+        for (int i = 0; i < length; i += chunkSize) {
+            int end = Math.min(i + chunkSize, length);
+            result.append(input, i, end);
+            if (end < length) {
+                result.append("\n\t");
+            }
+        }
+
+        return result.toString();
     }
 
     private void printLlmResp(String text, List<ToolExecutionRequest> requests) {
@@ -174,10 +194,10 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         if (text != null) {
             String msg;
             if (requests == null || requests.isEmpty()) {
-                msg = "LLM response:\n" + text;
+                msg = "LLM response:\n" + shorten(text);
             } else {
                 List<String> pretty = getPrettyToolExecutionRequest(requests);
-                msg = "LLM response:\n" + String.join("\n", pretty);
+                msg = "LLM response:\n" + shorten(text) + "\n" + String.join("\n", pretty);
             }
             System.out.println(msg);
         } else {
