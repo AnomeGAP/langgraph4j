@@ -18,6 +18,7 @@ import org.bsc.langgraph4j.langchain4j.generators.LLMStreamingGenerator;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * The CallAgent class implements the NodeAction interface for handling 
@@ -51,7 +52,19 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
     private Map<String,Object> mapResult( Response<AiMessage> response )  {
 
         AiMessage content = response.content();
-        System.out.println("LLM response: " + response);
+        ObjectMapper mapper = new ObjectMapper();
+        List<String> pretties = content.toolExecutionRequests().stream().map(req -> {
+                    String pretty;
+                    try {
+                        JsonNode root = mapper.readTree(req.toString());
+                        pretty = root.toPrettyString();
+                    } catch (Exception e) {
+                        pretty = e.getMessage();
+                    }
+                    return pretty;
+                }
+        ).collect(Collectors.toList());
+        System.out.println("LLM response:\n" + content.text() + "\n" + String.join("\n", pretties));
 
         String result = content.text();
         FinishReason finishReason = response.finishReason();
