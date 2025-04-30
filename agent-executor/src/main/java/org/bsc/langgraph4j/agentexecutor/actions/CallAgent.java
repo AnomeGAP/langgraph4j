@@ -52,25 +52,6 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
     private Map<String,Object> mapResult( Response<AiMessage> response )  {
 
         AiMessage content = response.content();
-        ObjectMapper mapper = new ObjectMapper();
-        List<String> pretties = content.toolExecutionRequests().stream().map(req -> {
-                    String pretty;
-                    try {
-                        String jsonStr = String.format("{ \"id\": \"%s\", \"name\": \"%s\", \"arguments\": %s }", req.id(), req.name(), req.arguments());
-                        JsonNode root = mapper.readTree(jsonStr); // remove ToolExecutionRequest
-                        pretty = root.toPrettyString();
-                    } catch (Exception e) {
-                        pretty = e.getMessage();
-                    }
-                    return pretty;
-                }
-        ).collect(Collectors.toList());
-        if (content.text() != null) {
-            System.out.println("LLM response:\n" + content.text() + "\n" + String.join("\n", pretties));
-        } else {
-            System.out.println("LLM response:\n" + String.join("\n", pretties));
-        }
-
         String result = content.text();
         FinishReason finishReason = response.finishReason();
         if (response.content().hasToolExecutionRequests()) {
@@ -117,6 +98,21 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
         }
 
+        if (content.text() != null) {
+            String msg;
+            if (content.hasToolExecutionRequests()) {
+                msg = String.format("LLM response:\n" + content.text() + "\n" + String.join("\n", getPrettyToolExecutionRequest(content)));
+            } else {
+                msg = String.format("LLM response:\n" + content.text());
+            }
+            System.out.println(msg);
+        } else {
+            if (content.hasToolExecutionRequests()) {
+                String msg = String.format("LLM response:\n" + String.join("\n", getPrettyToolExecutionRequest(content)));
+                System.out.println(msg);
+            }
+        }
+
         throw new IllegalStateException("Unsupported finish reason: " + response.finishReason() );
     }
 
@@ -148,7 +144,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         return requests;
     }
 
-    public void convertBracketedStringsToList(JsonNode node, ObjectMapper mapper) {
+    private void convertBracketedStringsToList(JsonNode node, ObjectMapper mapper) {
         Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
@@ -168,6 +164,22 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
                 }
             }
         }
+    }
+
+    private List<String> getPrettyToolExecutionRequest(AiMessage content) {
+        ObjectMapper mapper = new ObjectMapper();
+        return content.toolExecutionRequests().stream().map(req -> {
+                    String pretty;
+                    try {
+                        String jsonStr = String.format("{ \"id\": \"%s\", \"name\": \"%s\", \"arguments\": %s }", req.id(), req.name(), req.arguments());
+                        JsonNode root = mapper.readTree(jsonStr); // remove ToolExecutionRequest
+                        pretty = root.toPrettyString();
+                    } catch (Exception e) {
+                        pretty = e.getMessage();
+                    }
+                    return pretty;
+                }
+        ).collect(Collectors.toList());
     }
 
     /**
