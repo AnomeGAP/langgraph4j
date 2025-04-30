@@ -173,15 +173,17 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
 
         if (text != null) {
             String msg;
-            if (requests.isEmpty()) {
+            if (requests == null || requests.isEmpty()) {
                 msg = String.format("LLM response:\n" + text);
             } else {
-                msg = String.format("LLM response:\n" + text + "\n" + String.join("\n", getPrettyToolExecutionRequest(requests)));
+                List<String> pretty = getPrettyToolExecutionRequest(requests);
+                msg = String.format("LLM response:\n" + text + "\n" + String.join("\n", pretty));
             }
             System.out.println(msg);
         } else {
-            if (!requests.isEmpty()) {
-                String msg = String.format("LLM response:\n" + String.join("\n", getPrettyToolExecutionRequest(requests)));
+            if (requests != null && !requests.isEmpty()) {
+                List<String> pretty = getPrettyToolExecutionRequest(requests);
+                String msg = String.format("LLM response:\n" + String.join("\n", pretty));
                 System.out.println(msg);
             }
         }
