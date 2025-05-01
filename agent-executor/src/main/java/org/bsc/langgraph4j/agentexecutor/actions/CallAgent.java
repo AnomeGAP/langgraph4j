@@ -179,9 +179,13 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         int chunkSize = 120;
 
         for (int i = 0; i < length; i += chunkSize) {
+            int spaceIdx = 0;
             int end = Math.min(i + chunkSize, length);
-            result.append(input, i, end);
-            if (end < length) {
+            for (int j = end; j < length && input.charAt(j) != ' '; j++, spaceIdx++);
+
+            result.append(input, i, end + spaceIdx);
+
+            if (end + spaceIdx < length) {
                 result.append("\n\t");
             }
         }
