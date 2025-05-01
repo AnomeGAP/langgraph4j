@@ -169,7 +169,7 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         ).collect(Collectors.toList());
     }
 
-    private String shorten(String input) {
+    public static String shorten(String input) {
         if (input == null || input.isEmpty()) {
             return input;
         }
@@ -177,9 +177,9 @@ public class CallAgent implements NodeAction<AgentExecutor.State> {
         StringBuilder result = new StringBuilder();
         int length = input.length();
         int chunkSize = 120;
-
-        for (int i = 0; i < length; i += chunkSize) {
-            int spaceIdx = 0;
+        int spaceIdx;
+        for (int i = 0; i < length; i += chunkSize + spaceIdx) {
+            spaceIdx = 0;
             int end = Math.min(i + chunkSize, length);
             for (int j = end; j < length && input.charAt(j) != ' '; j++, spaceIdx++);
 
